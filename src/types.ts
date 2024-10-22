@@ -7,7 +7,6 @@ export interface NewTest {
     suite_id: string
     name?: string
     include_all: boolean
-    id?: string
 }
 
 export interface TestCase {

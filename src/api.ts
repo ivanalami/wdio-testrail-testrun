@@ -80,21 +80,47 @@ export default class TestRailAPI {
         }
     }
 
+    async createTestRun (test: NewTest, runName?: string): Promise<string> {
+        const now = new Date()
+        if (!test.name) {
+            test.name = `${runName} ${now.getDate()}.${now.getMonth()} ${now.getHours()}:${now.getMinutes()}`
+        }
+
+        const resp = await axios.post(
+            `${this.#baseUrl}/add_run/${this.#projectId}`,
+            test,
+            this.#config,
+        )
+        log.info(`Create new run '${test.name}' with id: ${resp.data.id}`)
+        return resp.data.id
+    }
+
     async getLastTestRun (suiteId: string, runName: string) {
+        const thirtyMinAgo = new Date()
+        thirtyMinAgo.setMinutes(thirtyMinAgo.getMinutes() - 30)
+        const date = new Date(thirtyMinAgo)
+
+        const unixTimeStamp = Math.floor(date.getTime() / 1000)
         try {
             const resp = await axios.get(
-                `${this.#baseUrl}/get_runs/${this.#projectId}&suite_id=${suiteId}`,
+                `${this.#baseUrl}/get_runs/${this.#projectId}&is_completed=0&created_after=${unixTimeStamp}&suite_id=${suiteId}`,
                 this.#config
             )
             const thisrun = resp.data.runs.filter(function (run: NewTest) {
-                return run.id?.match(runName)
+                return run.name!.startsWith(runName)
             })
 
-            const runId = thisrun
+            const runId = thisrun.length > 0
+                ? thisrun[0].id
+                : await this.createTestRun({
+                    suite_id: suiteId,
+                    name: runName,
+                    include_all: this.#includeAll
+                })
 
             return runId
         } catch (err: any) {
-            log.error(`Failed to get test run id: ${err.message}`)
+            log.error(`Failed to get last test run: ${err.message}`)
         }
     }
 }
