@@ -100,7 +100,11 @@ export default class TestRailReporter extends WDIOReporter {
     #getRunId () {
         return this.#options.oneReport
             ? this.#api.getLastTestRun(this.#options.suiteId, this.#options.runName)
-            : console.log('Test RunID not found')
+            : this.#api.createTestRun({
+                suite_id: this.#options.suiteId,
+                name: this.#options.runName,
+                include_all: this.#options.includeAll
+            })
     }
 
     async #updateSuite (suiteStats: SuiteStats) {
